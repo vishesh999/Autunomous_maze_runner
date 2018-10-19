@@ -1,0 +1,157 @@
+void maze()
+{
+  SetSensorLight(IN_4);
+  SetSensorLowspeed(IN_1);
+  RotateMotorPID(OUT_B,30,95,40,40,90);
+  int x=0;
+  int out = 0;
+  int s=0,l=0;
+while(true && (Sensor(IN_4)<=49||Sensor(IN_4)>51))
+{
+  while(x<27 &&(Sensor(IN_4)<=49||Sensor(IN_4)>51) )
+  {
+        int set = 15;
+        x = SensorUS(IN_1);
+        int speed = 30;
+        int e = set - x;
+        out = 0.8*e;
+        OnFwd(OUT_C,speed + out);
+        OnFwd(OUT_A,speed - out);
+
+        if(Sensor(IN_4)<=37) //37 is the threshold value here
+        {
+          Off(OUT_AC);
+          l = x;
+          RotateMotorPID(OUT_B,30,-95,40,40,90);
+          s = SensorUS(IN_1);
+          Wait(500);
+          RotateMotorPID(OUT_B,30,95,40,40,90);
+          if(s > 21)
+          {
+
+              OnFwd(OUT_AC,15);
+              Wait(1000);
+          }
+          else
+          {
+             RotateMotor(OUT_C,30,340);
+             Off(OUT_AC);
+             l = x;
+             RotateMotorPID(OUT_B,30,-95,40,40,90);
+             s = SensorUS(IN_1);
+             Wait(500);
+             RotateMotorPID(OUT_B,30,95,40,40,90);
+             if(s > 21)
+             {
+
+               OnFwd(OUT_AC,15);
+               Wait(1000);
+             }
+             else
+             {
+                 RotateMotor(OUT_C,30,340);
+             }
+          }
+
+        }
+
+    }
+    //here starts robot rotation
+    Off(OUT_AC);
+    Wait(1000);
+    RotateMotorPID(OUT_B,30,-15,40,40,90);
+    while(SensorUS(IN_1)>16)
+    {
+    OnFwd(OUT_A,45);
+    OnFwd(OUT_C,25);
+    if(Sensor(IN_4)==49||Sensor(IN_4)==50)
+    {
+     OnFwd(OUT_AC,30);
+     Wait(50);
+    }
+    }
+    Off(OUT_AC);
+    RotateMotorPID(OUT_B,30,15,40,40,90);
+    x = SensorUS(IN_1);
+ }
+}
+
+int circumvent_right()
+{
+
+     RotateMotorEx(OUT_AC,30,180,100,true,true);
+     OnFwd(OUT_C,40);
+     OnFwd(OUT_A,70);
+     Wait(2000);
+     until(Sensor(IN_4) <= 53);
+     OnFwd(OUT_AC,30);
+     Wait(400);
+     OnRev(OUT_A,30);
+     until(Sensor(IN_4) <= 53);
+     return 1;
+}
+
+
+void LFR()
+{
+int r=0,l=0;
+int x=0;
+while(true)
+{
+    if(SensorUS(IN_1) >= 10 && SensorUS(IN_1) <= 15 && x==0 )
+    {
+            Off(OUT_AC);
+            x = circumvent_right();
+    }
+    if(Sensor(IN_4)<38)
+    {
+         Off(OUT_AC);
+         maze();
+         break;
+    }
+    int Kproportional = 150;
+    int Kintegral =10;
+    int Kderivative  = 10;
+    int actual_position, error , proportional , derivative, integral=0;
+
+     int previous_error =0;
+    int output;
+
+    int setpoint = 53;
+    int speed = 25;
+
+    actual_position = Sensor(IN_4);                       // measuring the actual value from the light sensor
+    error = setpoint - actual_position;                   // calculating error with the set point
+
+    proportional = Kproportional * error;
+    integral = (integral+error);
+    derivative = error - previous_error;
+
+    output = ((proportional) + (Kintegral *integral) + (Kderivative * derivative));
+    output=output/100;
+
+    previous_error = error;
+
+     /*To print the light sensor value in the display*/
+     int SV;
+     SV = Sensor(IN_4);
+     NumOut(0, LCD_LINE1, SV);
+     NumOut(15,LCD_LINE2,error);
+     r = speed + output;
+     l = speed -  output;
+
+     OnFwd(OUT_A, (r));
+     OnFwd(OUT_C, (l));
+
+     }
+}
+
+task main()
+{
+  SetSensorLight(IN_4);
+  SetSensorLowspeed(IN_1);
+  LFR();
+
+}
+
+
